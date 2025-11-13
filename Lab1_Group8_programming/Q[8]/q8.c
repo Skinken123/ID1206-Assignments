@@ -14,9 +14,11 @@ int main() {
     int benchmark[] = {100, 1000, 10000, 100000, 1000000};
     int N;
 
+    printf("-------------|--------------|-------------\n");
     printf("%-12s | %-12s | %-12s\n", "Array Size", "Sum", "Time (s)");
     printf("-------------|--------------|-------------\n");
 
+    // Loop to run for all sizes of N
     for (int i = 0; i < 5; i++) {
         N = benchmark[i];
         int numbers[N];
@@ -72,15 +74,13 @@ int main() {
         close(pipe1[0]);
         close(pipe2[0]);
 
-        // Print final sum and total time
-        printf("The sum of the whole array is %d\n", sum1 + sum2);
+        // Total time calculated
         gettimeofday(&end, NULL);
         double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
         
         printf("%-12d | %-12d | %-12.8f\n", N, sum1 + sum2, elapsed);
+        printf("-------------|--------------|-------------\n");
     }
-
-    printf("-------------|--------------|-------------\n");
 
     return 0;
 }
