@@ -13,6 +13,10 @@ int main() {
     // Create array of N size and populate with random numbers
     int benchmark[] = {100, 1000, 10000, 100000, 1000000};
     int N;
+
+    printf("%-12s | %-12s | %-12s\n", "Array Size", "Sum", "Time (s)");
+    printf("-------------|--------------|-------------\n");
+
     for (int i = 0; i < 5; i++) {
         N = benchmark[i];
         int numbers[N];
@@ -72,8 +76,11 @@ int main() {
         printf("The sum of the whole array is %d\n", sum1 + sum2);
         gettimeofday(&end, NULL);
         double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
-        printf("Total time %.8f\n", elapsed);
+        
+        printf("%-12d | %-12d | %-12.8f\n", N, sum1 + sum2, elapsed);
     }
+
+    printf("-------------|--------------|-------------\n");
 
     return 0;
 }
