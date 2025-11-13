@@ -5,10 +5,10 @@ int main() {
 
     int pid = fork();
     if (pid == 0)
-        printf("I'm the child €d\n", getpid());
+        printf("I'm the child %d\n", getpid());
     else {
         printf("My child is called %d\n", pid);
-        sleep(10);
+        sleep(20);
     }
 
     printf("PID%d says goodbye\n", getpid());
