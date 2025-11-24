@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <time.h>
+#include <math.h>
 
 int num_threads = 0;
 void *thread_func(void *); /* the thread function */
@@ -27,9 +28,18 @@ int main(int argc, char *argv[]) {
     double numbers[array_length];
     for (int i = 0; i < array_length; i++) {
         numbers[i] = rand() / (double)RAND_MAX;
+        printf("%f\n", numbers[i]);
     }
+    double result = 1.0/30.0;
+    double a = result * 14.6;
+    double b = result * 16.0;
+    double index = floor(a / (1.0/30.0));
+    printf("%f and %f\n", result, index);
 
-    /* Perform Serial Sum */
+    // Create a array of length 30 with each index storing the number of values in the array between i-1 * 1/30 and i * 1/30
+    // Divid by 1/30 and take the floor of the result, then you get the index for which the value fits into 
+
+    /* Perform Serial Histogram */
     double sum_serial = 0.0f;
     double time_serial = 0.0;
     gettimeofday(&start, NULL);
@@ -87,7 +97,7 @@ void *thread_func(void *arg) {
     int start = args->start;
     int end = args->end;
 
-    // Sum array part
+    // Parallel histogram
     double *my_sum = malloc(sizeof(double));
     *my_sum = 0;
     for (int i = start; i < end; i++) {
