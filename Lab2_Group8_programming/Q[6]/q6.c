@@ -5,7 +5,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-int num_threads = 0;
 void *thread_func(void *); /* the thread function */
 
 struct thread_args {
