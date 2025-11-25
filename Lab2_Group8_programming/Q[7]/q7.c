@@ -30,9 +30,6 @@ int main(int argc, char *argv[]) {
         numbers[i] = rand() / (double)RAND_MAX;
     }
 
-    // Create a array of length 30 with each index storing the number of values in the array between i-1 * 1/30 and i * 1/30
-    // Divid by 1/30 and take the floor of the result, then you get the index for which the value fits into 
-
     /* Perform Serial Histogram */
     int histogram_serial[30] = {0};
     double time_serial = 0.0;
@@ -54,8 +51,10 @@ int main(int argc, char *argv[]) {
     /* Create a pool of num_threads workers and keep them in workers */
     pthread_t *workers = malloc(num_threads * sizeof(pthread_t));
     struct thread_args *args = malloc(num_threads * sizeof(struct thread_args));
+
     double time_parallel = 0.0;
-    double sum_parallel = 0.0f;
+    int parallel_total_values = 0;
+    int histogram_parallel[30] = {0};
     int workload = array_length/num_threads;
 
     gettimeofday(&start, NULL);
@@ -76,12 +75,18 @@ int main(int argc, char *argv[]) {
     for (int  j= 0; j < num_threads; j++) {
         void *result;
         pthread_join(workers[j], &result);
-        sum_parallel += *(double *)result;
+        for (int i = 0; i < 30; i++) {
+            histogram_parallel[i] += ((int *)result)[i];
+        }
         free(result);
     }
     gettimeofday(&end, NULL);
     time_parallel = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
-    printf("Parallel Sum = %f, time = %f \n\n", sum_parallel, time_parallel);
+    for (int i = 0; i < 30; i++) {
+        printf("%d values in bucket %d\n", histogram_serial[i], i);
+        parallel_total_values += histogram_serial[i];
+    }
+    printf("Total values in buckets = %d, time = %f \n\n", parallel_total_values, time_parallel);
 
     /* free up resources properly */
     free(workers);
@@ -99,11 +104,12 @@ void *thread_func(void *arg) {
     int end = args->end;
 
     // Parallel histogram
-    double *my_sum = malloc(sizeof(double));
-    *my_sum = 0;
+    int parallel_index = 0;
+    int *my_histogram = calloc(30, sizeof(int));
     for (int i = start; i < end; i++) {
-        *my_sum += arr[i];
+        parallel_index = floor(arr[i] / (1.0/30.0));
+        my_histogram[parallel_index] += 1;
     }
     // printf("Thread %d sum = %f\n", my_id, *my_sum);
-    return my_sum;
+    return my_histogram;
 }
