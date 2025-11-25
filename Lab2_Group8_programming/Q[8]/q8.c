@@ -43,8 +43,7 @@ int pop_cas() {
 
 /* the thread function */
 void *thread_func(int opt) {
-    /* Assign each thread an id so that they are unique in range [0, num_thread -1
-    ] */
+    /* Assign each thread an id so that they are unique in range [0, num_thread -1] */
     int my_id;
     if( opt==0 ) {
         push_mutex();push_mutex();pop_mutex();pop_mutex();push_mutex();
@@ -54,29 +53,34 @@ void *thread_func(int opt) {
     printf("Thread %d: exit\n", my_id);
     pthread_exit(0);
 }
+
 int main(int argc, char *argv[]) {
-    num_threads = atoi(argv[1]);
+    for (int i = 1; i < 7; i++) {
+        num_threads = atoi(argv[i]);
 
-    /* Option 1: Mutex */
-    pthread_t *workers;
-    for (int i = 0; i < num_threads; i++) {
-        pthread_attr_t attr;
-        pthread_attr_init(&attr);
-        pthread_create(...);
-    }
-    for (int i = 0; i < num_threads; i++) pthread_join(...);
-    //Print out all remaining nodes in Stack
-    printf("Mutex: Remaining nodes \n");
-    /*free up resources properly */
+        /* Option 1: Mutex */
+        pthread_t *workers;
+        for (int i = 0; i < num_threads; i++) {
+            pthread_attr_t attr;
+            pthread_attr_init(&attr);
+            pthread_create(...);
+        }
+        for (int i = 0; i < num_threads; i++) pthread_join(...);
+        //Print out all remaining nodes in Stack
+        printf("Mutex: Remaining nodes \n");
+        /*free up resources properly */
 
-    /* Option 2: CAS */
-    for (int i = 0; i < num_threads; i++) {
-        pthread_attr_t attr;
-        pthread_attr_init(&attr);
-        pthread_create(...);
+        /* Option 2: CAS */
+        for (int i = 0; i < num_threads; i++) {
+            pthread_attr_t attr;
+            pthread_attr_init(&attr);
+            pthread_create(...);
+        }
+        for (int i = 0; i < num_threads; i++) pthread_join(...);
+        //Print out all remaining nodes in Stack
+        printf("CAS: Remaining nodes \n");
+        /*free up resources properly */
     }
-    for (int i = 0; i < num_threads; i++) pthread_join(...);
-    //Print out all remaining nodes in Stack
-    printf("CAS: Remaining nodes \n");
-    /*free up resources properly */
+
+    return 0;
 }
