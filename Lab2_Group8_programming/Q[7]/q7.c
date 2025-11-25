@@ -28,27 +28,28 @@ int main(int argc, char *argv[]) {
     double numbers[array_length];
     for (int i = 0; i < array_length; i++) {
         numbers[i] = rand() / (double)RAND_MAX;
-        printf("%f\n", numbers[i]);
     }
-    double result = 1.0/30.0;
-    double a = result * 14.6;
-    double b = result * 16.0;
-    double index = floor(a / (1.0/30.0));
-    printf("%f and %f\n", result, index);
 
     // Create a array of length 30 with each index storing the number of values in the array between i-1 * 1/30 and i * 1/30
     // Divid by 1/30 and take the floor of the result, then you get the index for which the value fits into 
 
     /* Perform Serial Histogram */
-    double sum_serial = 0.0f;
+    int histogram_serial[30] = {0};
     double time_serial = 0.0;
+    int serial_index = 0;
+    int serial_total_values = 0;
     gettimeofday(&start, NULL);
     for (int i = 0; i < array_length; i++) {
-        sum_serial += numbers[i];
+        serial_index = floor(numbers[i] / (1.0/30.0));
+        histogram_serial[serial_index] += 1;
     }
     gettimeofday(&end, NULL);
     time_serial = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
-    printf("Serial Sum = %f, time = %f \n\n", sum_serial, time_serial);
+    for (int i = 0; i < 30; i++) {
+        printf("%d values in bucket %d\n", histogram_serial[i], i);
+        serial_total_values += histogram_serial[i];
+    }
+    printf("Total values in buckets = %d, time = %f \n\n", serial_total_values, time_serial);
 
     /* Create a pool of num_threads workers and keep them in workers */
     pthread_t *workers = malloc(num_threads * sizeof(pthread_t));
