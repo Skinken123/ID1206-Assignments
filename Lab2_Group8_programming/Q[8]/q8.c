@@ -19,8 +19,8 @@ Node *top = NULL; // top of stack
 pthread_mutex_t stack_mutex;
 int node_id_counter = 0;
 
-static _Atomic(Node*) atomic_top = NULL;   // atomic pointer to top of stack
-static _Atomic(int) atomic_node_id_counter = 0;    // atomic unique ID generator
+_Atomic(Node*) atomic_top = NULL;   // atomic pointer to top of stack
+_Atomic(int) atomic_node_id_counter = 0;    // atomic unique ID generator
 
 /*Option 1: Mutex Lock*/
 void push_mutex(int idd) {
@@ -59,7 +59,6 @@ int pop_mutex(int idd) {
 /*Option 2: Compare-and-Swap (CAS)*/
 void push_cas() {
     Node *new_node = malloc(sizeof(Node));
-    if (!new_node) return;
 
     new_node->node_id = atomic_fetch_add(&atomic_node_id_counter, 1);
 
@@ -97,14 +96,14 @@ void *thread_func(void *arg) {
         pop_mutex(my_id);
         pop_mutex(my_id);
         push_mutex(my_id);
-        printf("Mutex Thread %d: exit\n", my_id);
+        //printf("Mutex Thread %d: exit\n", my_id);
     } else {
         push_cas();
         push_cas();
         pop_cas();
         pop_cas();
         push_cas();
-        printf("CAS Thread %d: exit\n", my_id);
+        //printf("CAS Thread %d: exit\n", my_id);
     }
     pthread_exit(0);
 }
@@ -140,7 +139,7 @@ int main(int argc, char *argv[]) {
             pthread_join(workers[i], NULL);
         }
         //Print out all remaining nodes in Stack
-        printf("Mutex: Remaining nodes \n");
+        printf("Mutex: Remaining nodes with %d threads\n", num_threads);
         count_stack(top);
         /*free up resources properly */
         free(workers);
@@ -161,12 +160,12 @@ int main(int argc, char *argv[]) {
             pthread_join(workers[i], NULL);
         }
         //Print out all remaining nodes in Stack
-        printf("CAS: Remaining nodes \n");
+        printf("CAS: Remaining nodes with %d threads\n", num_threads);
         count_stack(atomic_load(&atomic_top));
         /*free up resources properly */
         free(workers);
         free(args);
-        printf("Lap finished\n\n");
+        //printf("Lap finished\n\n");
     }
 
     return 0;

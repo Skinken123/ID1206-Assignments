@@ -44,7 +44,6 @@ int main(int argc, char *argv[]) {
 
     // Loop parallel calculation with 4, 8, 12, 16 threads
     for (int i = 0; i < 4; i++) {
-        printf("%d\n", num_threads[i]);
         /* Create a pool of num_threads workers and keep them in workers */
         pthread_t *workers = malloc(num_threads[i] * sizeof(pthread_t));
         struct thread_args *args = malloc(num_threads[i] * sizeof(struct thread_args));
@@ -75,7 +74,7 @@ int main(int argc, char *argv[]) {
         }
         gettimeofday(&end, NULL);
         time_parallel = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
-        printf("Parallel Sum = %f, time = %f \n\n", sum_parallel, time_parallel);
+        printf("Parallel Sum with %d threads= %f, time = %f \n\n", num_threads[i],sum_parallel, time_parallel);
 
         /* free up resources properly */
         free(workers);
