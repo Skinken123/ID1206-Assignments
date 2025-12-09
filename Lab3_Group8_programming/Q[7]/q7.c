@@ -10,22 +10,26 @@ int main(int argc, char *argv[]){
         return 0;
     }
 
-    time_t start,end;
+    struct timespec start,end;
+
     int num_pages = atoi(argv[1]);
     int option = atoi(argv[2]);
     int page_size = getpagesize();
     int allocation_size = num_pages * page_size;
 
     printf("Allocating %d pages of %d bytes \n", num_pages, page_size);
+    
     char *addr;
-    // @Add the start of Timer here
-    // Option 1: @Add mmap below to allocate num_pages anonymous pages
+
+    //Start time
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
     if (option == 1) {
-        addr = mmap(NULL, allocation_size);
+        addr = mmap(NULL, allocation_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     }
-    // Option 2: @Add mmap below to allocate num_pages anonymous pages but using "huge" pages
+    
     if (option == 2) {
-        addr = (char*) mmap(NULL);
+        addr = mmap(NULL, allocation_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
     }
 
     if (addr == MAP_FAILED) {
@@ -40,12 +44,16 @@ int main(int argc, char *argv[]){
         c ++;
     }
 
-    // @Add the end of Timer here
-    // @Add printout of elapsed time in cycles
+    //End time
+    end = time(NULL);
+    double elapsed = difftime(end, start);
+    printf("Elapsed time: %.2f seconds\n", elapsed);
+
     for(int i=0; (i<num_pages && i<16); i++){
         printf("%c ", addr[i*page_size]);
     }
     printf("\n");
 
     munmap(addr, page_size*num_pages);
+    return 0;
 }
