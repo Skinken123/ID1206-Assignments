@@ -1,8 +1,12 @@
+#define _GNU_SOURCE 
 #include <malloc.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <time.h>
+
+// 2 MB
+#define HUGE_PAGE_SIZE (2097152) 
 
 int main(int argc, char *argv[]){
     if (argc != 3) {
@@ -25,11 +29,12 @@ int main(int argc, char *argv[]){
     clock_gettime(CLOCK_MONOTONIC, &start);
 
     if (option == 1) {
-        addr = mmap(NULL, allocation_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        addr = (char*) mmap(NULL, allocation_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     }
     
     if (option == 2) {
-        addr = mmap(NULL, allocation_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+        printf("Trying to allocate huge\n");
+        addr = (char*) mmap(NULL, allocation_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
     }
 
     if (addr == MAP_FAILED) {
@@ -45,15 +50,15 @@ int main(int argc, char *argv[]){
     }
 
     //End time
-    end = time(NULL);
-    double elapsed = difftime(end, start);
-    printf("Elapsed time: %.2f seconds\n", elapsed);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+    printf("Time elapsed: %.9f seconds\n", elapsed);
 
     for(int i=0; (i<num_pages && i<16); i++){
         printf("%c ", addr[i*page_size]);
+
     }
     printf("\n");
 
     munmap(addr, page_size*num_pages);
-    return 0;
 }
