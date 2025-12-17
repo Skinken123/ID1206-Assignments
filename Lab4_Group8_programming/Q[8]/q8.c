@@ -38,8 +38,6 @@ int main() {
         exit(1);
     }
 
-    printf("Memory mapped at address: %p\n", mmap_ptr);
-
     pid_t pid = fork();
     if (pid < 0) {
         perror("fork");
@@ -47,6 +45,9 @@ int main() {
     }
 
     if (pid == 0) { // Child
+        // Part (a) output
+        printf("Child process (pid=%d); mmap address: %p\n", getpid(), mmap_ptr);
+
         char *text_to_write = "01234";
         char text_to_read[6];
 
@@ -60,13 +61,16 @@ int main() {
         // Wait for parent to write
         sem_wait(sem_parent);
 
-        // Read parent's write
+        // Part (b) output
         memcpy(text_to_read, mmap_ptr + 4096, 5);
         text_to_read[5] = '\0';
-        printf("Child reads from mmap_ptr[4096]: %s\n", text_to_read);
+        printf("Child process (pid=%d); read from mmaped_ptr[4096]: %s\n", getpid(), text_to_read);
 
         exit(0);
     } else { // Parent
+        // Part (a) output
+        printf("Parent process (pid=%d); mmap address: %p\n", getpid(), mmap_ptr);
+
         char *text_to_write = "56789";
         char text_to_read[6];
 
@@ -80,10 +84,10 @@ int main() {
         // Signal parent has written
         sem_post(sem_parent);
 
-        // Read child's write
+        // Part (b) output
         memcpy(text_to_read, mmap_ptr, 5);
         text_to_read[5] = '\0';
-        printf("Parent reads from mmap_ptr[0]: %s\n", text_to_read);
+        printf("Parent process (pid=%d); read from mmaped_ptr[0]: %s\n", getpid(), text_to_read);
 
         wait(NULL); // wait for child to finish
     }
