@@ -44,6 +44,7 @@ void *reader_thread_func(void *arg) {
         }
     }
 
+    free(args);
     pthread_exit(0);
 }
 void *writer_thread_func(void *arg) {
@@ -70,10 +71,11 @@ void *writer_thread_func(void *arg) {
           }
      }
 
-     pthread_exit(0);
+    free(args);
+    pthread_exit(0);
 }
 int main(int argc, char *argv[]) {
-    srand(time(0)); // Seed RNG
+    srand(time(NULL)); // Seed RNG
     int num_bytes = atoi(argv[1]); //number of bytes
     int num_threads = atoi(argv[2]); //number of threads
     const int LIST_SIZE = 100;
@@ -85,9 +87,9 @@ int main(int argc, char *argv[]) {
     // for timer
     struct timespec start,end;
 
-    // @create a file for saving the data
-    FILE *fileptr;
-    int file_descriptor = open("file.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    // init for file creation and threads
+    int file_descriptor;
+    pthread_t threads[num_threads];
 
     // @allocate a buffer and initialize it
     void *buffer = calloc(1, num_bytes);
@@ -119,77 +121,76 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // @start timing
-    /* Create writer workers and pass in their portion of list1 */
-    /* Wait for all writers to finish */
-    // @close the file
-    // @end timing
+    // Arrays to enable loop over list1 and list2
+    ListData *lists[2] = { list1, list2 };
+    int request_sizes[2] = { SEQ_REQUEST_SIZE, RAND_REQUEST_SIZE };
+    const char *list_names[2] = {
+        "List 1 (Sequential)",
+        "List 2 (Random)"
+    };
 
-    //Start time
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    pthread_t threads[num_threads];
-    int array_index = 0;
-    for (int i = 0; i < num_threads; i++) {
-        ThreadArgs *func_data = malloc(sizeof(ThreadArgs));
-        func_data->list = list1;
-        func_data->start_index = array_index;
-        func_data->end_index = array_index + THREAD_WORKLOAD;
-        func_data->buffer = buffer;
-        func_data->file_descriptor = file_descriptor;
-        pthread_create(&threads[i], NULL, writer_thread_func, func_data);
-        array_index += THREAD_WORKLOAD;
+    // Loop through both lists
+    for (int l = 0; l < 2; l++) {
+
+        /* ---------- WRITE ---------- */
+        file_descriptor = open("file.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        clock_gettime(CLOCK_MONOTONIC, &start);
+
+        int index = 0;
+        for (int i = 0; i < num_threads; i++) {
+            ThreadArgs *args = malloc(sizeof(ThreadArgs));
+            args->list = lists[l];
+            args->start_index = index;
+            args->end_index = index + THREAD_WORKLOAD;
+            args->buffer = buffer;
+            args->file_descriptor = file_descriptor;
+
+            pthread_create(&threads[i], NULL, writer_thread_func, args);
+            index += THREAD_WORKLOAD;
+        }
+
+        for (int i = 0; i < num_threads; i++) {
+            pthread_join(threads[i], NULL);
+        }
+
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        close(file_descriptor);
+
+        double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+
+        double total_mb = (request_sizes[l] * LIST_SIZE) / (1024.0 * 1024.0);
+
+        printf("Write %s: %f MB, use %d threads, elapsed time %f s, write bandwidth %f MB/s\n", list_names[l], total_mb, num_threads, elapsed, total_mb / elapsed);
+
+        /* ---------- READ ---------- */
+        file_descriptor = open("file.txt", O_RDONLY);
+        clock_gettime(CLOCK_MONOTONIC, &start);
+
+        index = 0;
+        for (int i = 0; i < num_threads; i++) {
+            ThreadArgs *args = malloc(sizeof(ThreadArgs));
+            args->list = lists[l];
+            args->start_index = index;
+            args->end_index = index + THREAD_WORKLOAD;
+            args->buffer = buffer;
+            args->file_descriptor = file_descriptor;
+
+            pthread_create(&threads[i], NULL, reader_thread_func, args);
+            index += THREAD_WORKLOAD;
+        }
+
+        for (int i = 0; i < num_threads; i++) {
+            pthread_join(threads[i], NULL);
+        }
+
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        close(file_descriptor);
+
+        elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+
+        printf("Read  %s: %f MB, use %d threads, elapsed time %f s, write bandwidth %f MB/s\n\n", list_names[l], total_mb, num_threads, elapsed, total_mb / elapsed);
     }
-
-    for(int i = 0; i < num_threads; i++) {
-          pthread_join(threads[i], NULL);
-    }
-
-    //End time
-    clock_gettime(CLOCK_MONOTONIC, &end);
-    double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-    close(file_descriptor);
-    double total_mb = (SEQ_REQUEST_SIZE * LIST_SIZE) / (1024.0 * 1024.0);
-    double bandwidth = total_mb / elapsed;
-
-    //@Print out the write bandwidth
-    printf("Write %f MB, use %d threads, elapsed time %f s, write bandwidth: %fMB/s \n", total_mb, num_threads, elapsed, bandwidth);
-
-    // @reopen the file
-    // @start timing
-    /* Create reader workers and pass in their portion of list1 */
-    /* Wait for all reader to finish */
-    // @close the file
-    // @end timing
-
-    file_descriptor = open("file.txt", O_RDONLY);
-
-    //Start time
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    array_index = 0;
-    for (int i = 0; i < num_threads; i++) {
-        ThreadArgs *func_data = malloc(sizeof(ThreadArgs));
-        func_data->list = list1;
-        func_data->start_index = array_index;
-        func_data->end_index = array_index + THREAD_WORKLOAD;
-        func_data->buffer = buffer;
-        func_data->file_descriptor = file_descriptor;
-        pthread_create(&threads[i], NULL, reader_thread_func, func_data);
-        array_index += THREAD_WORKLOAD;
-    }
-
-    for(int i = 0; i < num_threads; i++) {
-          pthread_join(threads[i], NULL);
-    }
-
-    //End time
-    clock_gettime(CLOCK_MONOTONIC, &end);
-    elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-    bandwidth = total_mb / elapsed;
-
-    //@Print out the read bandwidth
-    printf("Read %f MB, use %d threads, elapsed time %f s, read bandwidth: %fMB/s \n", total_mb, num_threads, elapsed , bandwidth);
-
-    // @Repeat the write and read test now using List2
     /*free up resources properly */
     free(buffer);
+    return 0;
 }
