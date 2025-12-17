@@ -20,10 +20,30 @@ typedef struct {
     int file_descriptor;
 } ThreadArgs;  
 
-void *reader_thread_func(/*@input paramters*/) {
+void *reader_thread_func(void *arg) {
     // @Add code for reader threads
     // @Given a list of [offset1, bytes1], [offset2, bytes2], ...
     // @for each: read bytes_i from offset_i
+    ThreadArgs *args = (ThreadArgs *)arg;
+
+    ListData *list = args->list;
+    int start_index = args->start_index;
+    int end_index = args->end_index;
+    char *buffer = (char *)args->buffer;
+    int file_descriptor = args->file_descriptor;
+
+    for (int i = start_index; i < end_index; i++) {
+        int offset = list[i].offset;
+        int bytes  = list[i].bytes;
+
+        /* Read bytes from file at offset into buffer */
+        ssize_t read_bytes = pread(file_descriptor, buffer + offset, bytes, offset);
+
+        if (read_bytes != bytes) {
+            perror("read error");
+        }
+    }
+
     pthread_exit(0);
 }
 void *writer_thread_func(void *arg) {
@@ -141,17 +161,33 @@ int main(int argc, char *argv[]) {
     // @close the file
     // @end timing
 
+    file_descriptor = open("file.txt", O_RDONLY);
+
     //Start time
     clock_gettime(CLOCK_MONOTONIC, &start);
+    array_index = 0;
+    for (int i = 0; i < num_threads; i++) {
+        ThreadArgs *func_data = malloc(sizeof(ThreadArgs));
+        func_data->list = list1;
+        func_data->start_index = array_index;
+        func_data->end_index = array_index + THREAD_WORKLOAD;
+        func_data->buffer = buffer;
+        func_data->file_descriptor = file_descriptor;
+        pthread_create(&threads[i], NULL, reader_thread_func, func_data);
+        array_index += THREAD_WORKLOAD;
+    }
 
-    
+    for(int i = 0; i < num_threads; i++) {
+          pthread_join(threads[i], NULL);
+    }
 
     //End time
     clock_gettime(CLOCK_MONOTONIC, &end);
     elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+    bandwidth = total_mb / elapsed;
 
     //@Print out the read bandwidth
-    //printf("Read %f MB, use %d threads, elapsed time %f s, write bandwidth: %fMB/s \n", 1, 2, 3 , 4);
+    printf("Read %f MB, use %d threads, elapsed time %f s, read bandwidth: %fMB/s \n", total_mb, num_threads, elapsed , bandwidth);
 
     // @Repeat the write and read test now using List2
     /*free up resources properly */
