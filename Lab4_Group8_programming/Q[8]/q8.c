@@ -15,7 +15,7 @@
 int main() {
     int fd = open("file_to_map.txt", O_RDWR);
     if (fd < 0) {
-        perror("open");
+        perror("error while opening file");
         exit(1);
     }
 
@@ -26,26 +26,25 @@ int main() {
     // Create semaphores
     sem_t *sem_parent = sem_open(SEM_PARENT_WRITTEN, O_CREAT, 0644, 0);
     sem_t *sem_child  = sem_open(SEM_CHILD_WRITTEN,  O_CREAT, 0644, 0);
-
     if (sem_parent == SEM_FAILED || sem_child == SEM_FAILED) {
-        perror("sem_open");
+        perror("error creating semaphores");
         exit(1);
     }
 
+    // Shared mapping between parent and child process
     char *mmap_ptr = mmap(NULL, FILE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (mmap_ptr == MAP_FAILED) {
-        perror("mmap");
+        perror("error with mmap shared mapping");
         exit(1);
     }
 
     pid_t pid = fork();
     if (pid < 0) {
-        perror("fork");
+        perror("error with fork");
         exit(1);
     }
 
     if (pid == 0) { // Child
-        // Part (a) output
         printf("Child process (pid=%d); mmap address: %p\n", getpid(), mmap_ptr);
 
         char *text_to_write = "01234";
@@ -61,14 +60,12 @@ int main() {
         // Wait for parent to write
         sem_wait(sem_parent);
 
-        // Part (b) output
         memcpy(text_to_read, mmap_ptr + 4096, 5);
         text_to_read[5] = '\0';
         printf("Child process (pid=%d); read from mmaped_ptr[4096]: %s\n", getpid(), text_to_read);
 
         exit(0);
     } else { // Parent
-        // Part (a) output
         printf("Parent process (pid=%d); mmap address: %p\n", getpid(), mmap_ptr);
 
         char *text_to_write = "56789";
@@ -84,7 +81,6 @@ int main() {
         // Signal parent has written
         sem_post(sem_parent);
 
-        // Part (b) output
         memcpy(text_to_read, mmap_ptr, 5);
         text_to_read[5] = '\0';
         printf("Parent process (pid=%d); read from mmaped_ptr[0]: %s\n", getpid(), text_to_read);

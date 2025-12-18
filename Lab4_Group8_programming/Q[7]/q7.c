@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
 
         elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
 
-        printf("Read  %s: %f MB, use %d threads, elapsed time %f s, write bandwidth %f MB/s\n\n", list_names[l], total_mb, num_threads, elapsed, total_mb / elapsed);
+        printf("Read  %s: %f MB, use %d threads, elapsed time %f s, read bandwidth %f MB/s\n\n", list_names[l], total_mb, num_threads, elapsed, total_mb / elapsed);
     }
     /*free up resources properly */
     free(buffer);
